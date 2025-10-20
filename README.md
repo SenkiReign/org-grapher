@@ -3,6 +3,11 @@ Graph visualization for Org notes
 
 <img width="1826" height="897" alt="graph" src="https://github.com/user-attachments/assets/14613469-d0d8-4001-b67c-d8fd223395ee" />
 
+- Interactive graph of .org notes.
+- Links automatically created from tags and org mode links.
+- Lightweight, minimal, and self-contained.
+- Clustering reflect the number of connections.
+- Works fully offline after initial setup.
 
 ## Installation
 
