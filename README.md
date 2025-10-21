@@ -23,4 +23,22 @@ Graph visualization for Org notes
 
 ## Generate a Graph
 
-```M-x org-grapher-open```
+- `M-x org-grapher-open` - Generate and open graph for your configured org directory
+- `M-x org-grapher-open-here` - Generate and open graph for current directory / local graph
+
+### Example Config
+```elisp
+;; Customize colors
+(setq org-grapher--tag-colors
+  '("emacs" "#d65d0e"
+    "work" "#458588"
+    "personal" "#98971a"))
+
+;; Configure directories
+(setq org-grapher-notes-directory "~/org/"
+      org-grapher-recursive t
+      org-grapher-output-file "~/.cache/org-graph.html")
+
+;; Load package
+(require 'org-grapher)
+
