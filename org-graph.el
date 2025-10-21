@@ -1,4 +1,4 @@
-;;; org-graph-view.el --- Graph visualization for Org notes -*- lexical-binding: t; -*-
+;;; org-graph.el --- Graph visualization for Org notes -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 ;; Graph visualization for Org journal notes with tags and links.
@@ -343,18 +343,11 @@
     org-graph-output-file))
 
 ;;;###autoload
-(defun org-graph-view ()
+(defun org-graph-open ()
   "Show Org graph."
   (interactive)
   (let ((file (org-graph--generate-html)))
     (browse-url (concat "file://" file))))
 
-;;;###autoload
-(defun org-graph-refresh ()
-  "Refresh graph."
-  (interactive)
-  (org-graph--generate-html)
-  (message "Refreshed. Reload browser."))
-
-(provide 'org-graph-view)
-;;; org-graph-view.el ends here
+(provide 'org-graph)
+;;; org-graph.el ends here
