@@ -15,8 +15,13 @@
   :prefix "org-grapher-")
 
 (defcustom org-grapher-notes-directory (expand-file-name "~/org/")
-  "Directory containing Org journal notes."
+  "Directory containing Org notes."
   :type 'directory
+  :group 'org-grapher)
+
+(defcustom org-grapher-recursive t
+  "When non-nil, scan subdirectories recursively for org files."
+  :type 'boolean
   :group 'org-grapher)
 
 (defcustom org-grapher-output-file (expand-file-name "~/.emacs.d/org-grapher.html")
@@ -40,7 +45,15 @@
     "note" "#6a9589"
     "todo" "#c55d55"
     "meeting" "#928374")
-  "Alist of tag names to colors - muted gruvbox inspired.")
+  "Plist of tag names to colors (muted gruvbox inspired).
+Customize by setting this variable before loading org-grapher:
+
+  (setq org-grapher--tag-colors
+    '(\"emacs\" \"#ff0000\"
+      \"work\" \"#00ff00\"
+      \"personal\" \"#0000ff\"))
+
+Tags not in this list will get auto-generated colors.")
 
 (defvar org-grapher--color-cache (make-hash-table :test 'equal)
   "Cache for generated tag colors.")
@@ -56,15 +69,19 @@
         (puthash tag color org-grapher--color-cache)
         color)))
 
-(defun org-grapher--parse-notes ()
-  "Parse all Org notes and return nodes and links."
-  (let ((nodes '())
-        (links '())
-        (note-ids (make-hash-table :test 'equal))
-        (tag-ids (make-hash-table :test 'equal))
-        (note-counter 0)
-        (tag-counter 0)
-        (files (directory-files org-grapher-notes-directory t "\\.org\\'")))
+(defun org-grapher--parse-notes (&optional directory)
+  "Parse all Org notes and return nodes and links.
+If DIRECTORY is provided, use it instead of `org-grapher-notes-directory'."
+  (let* ((target-dir (or directory org-grapher-notes-directory))
+         (nodes '())
+         (links '())
+         (note-ids (make-hash-table :test 'equal))
+         (tag-ids (make-hash-table :test 'equal))
+         (note-counter 0)
+         (tag-counter 0)
+         (files (if org-grapher-recursive
+                    (directory-files-recursively target-dir "\\.org\\'")
+                  (directory-files target-dir t "\\.org\\'"))))
     
     ;; First: collect all headings
     (dolist (file files)
@@ -318,9 +335,10 @@
    "});\n"
    "</script>\n</body>\n</html>\n"))
 
-(defun org-grapher--generate-html ()
-  "Generate HTML file with graph."
-  (let* ((graph-data (org-grapher--parse-notes))
+(defun org-grapher--generate-html (&optional directory)
+  "Generate HTML file with graph.
+If DIRECTORY is provided, parse org files from that directory instead."
+  (let* ((graph-data (org-grapher--parse-notes directory))
          (json-str (let ((json-encoding-pretty-print nil)) (json-encode graph-data)))
          (d3-script (org-grapher--fetch-d3))
          (html (org-grapher--make-html-content))
@@ -339,9 +357,16 @@
 
 ;;;###autoload
 (defun org-grapher-open ()
-  "Show Org graph."
+  "Generate and open graph for org files in `org-grapher-notes-directory'."
   (interactive)
   (let ((file (org-grapher--generate-html)))
+    (browse-url (concat "file://" file))))
+
+;;;###autoload
+(defun org-grapher-open-here ()
+  "Generate and open graph for org files in current directory and subdirectories."
+  (interactive)
+  (let ((file (org-grapher--generate-html default-directory)))
     (browse-url (concat "file://" file))))
 
 (provide 'org-grapher)
