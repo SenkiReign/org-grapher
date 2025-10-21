@@ -11,7 +11,7 @@ Graph visualization for Org notes
 
 ## Installation
 
-1. Copy `org-graph.el` to your Emacs `load-path`.  
+1. Copy `org-grapher.el` to your Emacs `load-path`.  
 2. Add to your `init.el` or `config.el`:
 
    ```elisp
