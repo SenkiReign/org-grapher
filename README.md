@@ -17,7 +17,7 @@ Graph visualization for Org notes
    ```elisp
    (load "~/path/to/org-graph.el")
 
-## Set your Howm directory 
+## Set your org directory 
 
 ```(setq org-graph-notes-directory "~/") ```
 
