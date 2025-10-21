@@ -1,4 +1,4 @@
-;;; org-graph.el --- Graph visualization for Org notes -*- lexical-binding: t; -*-
+;;; org-grapher.el --- Graph visualization for Org notes -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 ;; Graph visualization for Org notes with tags and links.
@@ -9,27 +9,27 @@
 (require 'org)
 (require 'org-element)
 
-(defgroup org-graph nil
+(defgroup org-grapher nil
   "Graph visualization for Org notes."
   :group 'org
-  :prefix "org-graph-")
+  :prefix "org-grapher-")
 
-(defcustom org-graph-notes-directory (expand-file-name "~/org/")
+(defcustom org-grapher-notes-directory (expand-file-name "~/org/")
   "Directory containing Org journal notes."
   :type 'directory
-  :group 'org-graph)
+  :group 'org-grapher)
 
-(defcustom org-graph-output-file (expand-file-name "~/.emacs.d/org-graph.html")
+(defcustom org-grapher-output-file (expand-file-name "~/.emacs.d/org-grapher.html")
   "Path to the generated graph HTML file."
   :type 'file
-  :group 'org-graph)
+  :group 'org-grapher)
 
-(defcustom org-graph-d3-cache-file (expand-file-name "~/.emacs.d/org-d3.js")
+(defcustom org-grapher-d3-cache-file (expand-file-name "~/.emacs.d/org-d3.js")
   "Path to cached D3.js library."
   :type 'file
-  :group 'org-graph)
+  :group 'org-grapher)
 
-(defvar org-graph--tag-colors
+(defvar org-grapher--tag-colors
   '("emacs" "#b8926d"
     "programming" "#8f9a5e"
     "research" "#c55d55"
@@ -42,21 +42,21 @@
     "meeting" "#928374")
   "Alist of tag names to colors - muted gruvbox inspired.")
 
-(defvar org-graph--color-cache (make-hash-table :test 'equal)
+(defvar org-grapher--color-cache (make-hash-table :test 'equal)
   "Cache for generated tag colors.")
 
-(defun org-graph--get-tag-color (tag)
+(defun org-grapher--get-tag-color (tag)
   "Get color for TAG or generate a consistent one."
-  (or (plist-get org-graph--tag-colors tag)
-      (gethash tag org-graph--color-cache)
+  (or (plist-get org-grapher--tag-colors tag)
+      (gethash tag org-grapher--color-cache)
       (let ((color (format "#%02x%02x%02x"
                           (+ 100 (mod (sxhash tag) 156))
                           (+ 100 (mod (ash (sxhash tag) -8) 156))
                           (+ 100 (mod (ash (sxhash tag) -16) 156)))))
-        (puthash tag color org-graph--color-cache)
+        (puthash tag color org-grapher--color-cache)
         color)))
 
-(defun org-graph--parse-notes ()
+(defun org-grapher--parse-notes ()
   "Parse all Org notes and return nodes and links."
   (let ((nodes '())
         (links '())
@@ -64,7 +64,7 @@
         (tag-ids (make-hash-table :test 'equal))
         (note-counter 0)
         (tag-counter 0)
-        (files (directory-files org-graph-notes-directory t "\\.org\\'")))
+        (files (directory-files org-grapher-notes-directory t "\\.org\\'")))
     
     ;; First: collect all headings
     (dolist (file files)
@@ -98,7 +98,7 @@
                                    (cons 'file fname)
                                    (cons 'type "note")
                                    (cons 'color (if tags 
-                                                   (org-graph--get-tag-color (car tags))
+                                                   (org-grapher--get-tag-color (car tags))
                                                    "#1f77b4")))
                               nodes)
                 
@@ -115,7 +115,7 @@
                                            (cons 'content "")
                                            (cons 'file "")
                                            (cons 'type "keyword")
-                                           (cons 'color (org-graph--get-tag-color tag)))
+                                           (cons 'color (org-grapher--get-tag-color tag)))
                                       nodes)
                                 (puthash tag tag-id tag-ids)
                                 (setq tag-counter (1+ tag-counter))))
@@ -178,11 +178,11 @@
     
     (list :nodes (nreverse nodes) :links (nreverse links))))
 
-(defun org-graph--fetch-d3 ()
+(defun org-grapher--fetch-d3 ()
   "Fetch D3.js library, using cache if available."
-  (if (file-exists-p org-graph-d3-cache-file)
+  (if (file-exists-p org-grapher-d3-cache-file)
       (with-temp-buffer
-        (insert-file-contents org-graph-d3-cache-file)
+        (insert-file-contents org-grapher-d3-cache-file)
         (buffer-string))
     (message "Downloading D3.js (one-time download)...")
     (let ((d3-url "https://d3js.org/d3.v7.min.js"))
@@ -190,12 +190,12 @@
         (goto-char (point-min))
         (re-search-forward "^$")
         (let ((d3-content (buffer-substring (point) (point-max))))
-          (with-temp-file org-graph-d3-cache-file
+          (with-temp-file org-grapher-d3-cache-file
             (insert d3-content))
-          (message "D3.js cached to %s" org-graph-d3-cache-file)
+          (message "D3.js cached to %s" org-grapher-d3-cache-file)
           d3-content)))))
 
-(defun org-graph--make-html-content ()
+(defun org-grapher--make-html-content ()
   "Generate the HTML content."
   (concat
    "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n<title>Org Graph</title>\n"
@@ -318,31 +318,31 @@
    "});\n"
    "</script>\n</body>\n</html>\n"))
 
-(defun org-graph--generate-html ()
+(defun org-grapher--generate-html ()
   "Generate HTML file with graph."
-  (let* ((graph-data (org-graph--parse-notes))
+  (let* ((graph-data (org-grapher--parse-notes))
          (json-str (let ((json-encoding-pretty-print nil)) (json-encode graph-data)))
-         (d3-script (org-graph--fetch-d3))
-         (html (org-graph--make-html-content))
+         (d3-script (org-grapher--fetch-d3))
+         (html (org-grapher--make-html-content))
          (coding-system-for-write 'utf-8))
     
     (setq html (replace-regexp-in-string "REPLACE_D3_HERE" d3-script html t t))
     (setq html (replace-regexp-in-string "REPLACE_DATA_HERE" json-str html t t))
     
-    (with-temp-file org-graph-output-file
+    (with-temp-file org-grapher-output-file
       (insert html))
     
     (message "Generated graph: %d nodes, %d links"
              (length (plist-get graph-data :nodes))
              (length (plist-get graph-data :links)))
-    org-graph-output-file))
+    org-grapher-output-file))
 
 ;;;###autoload
-(defun org-graph-open ()
+(defun org-grapher-open ()
   "Show Org graph."
   (interactive)
-  (let ((file (org-graph--generate-html)))
+  (let ((file (org-grapher--generate-html)))
     (browse-url (concat "file://" file))))
 
-(provide 'org-graph)
-;;; org-graph.el ends here
+(provide 'org-grapher)
+;;; org-grapher.el ends here
