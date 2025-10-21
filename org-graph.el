@@ -1,15 +1,9 @@
 ;;; org-graph.el --- Graph visualization for Org notes -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Graph visualization for Org journal notes with tags and links.
+;; Graph visualization for Org notes with tags and links.
 
 ;;; Code:
-(setq coding-system-for-read 'utf-8
-      coding-system-for-write 'utf-8
-      default-buffer-file-coding-system 'utf-8
-      locale-coding-system 'utf-8
-      selection-coding-system 'utf-8
-      inhibit-eol-conversion t)
 (require 'json)
 (require 'url)
 (require 'org)
@@ -20,7 +14,7 @@
   :group 'org
   :prefix "org-graph-")
 
-(defcustom org-graph-notes-directory "~/org"
+(defcustom org-graph-notes-directory (expand-file-name "~/org/")
   "Directory containing Org journal notes."
   :type 'directory
   :group 'org-graph)
@@ -329,7 +323,8 @@
   (let* ((graph-data (org-graph--parse-notes))
          (json-str (let ((json-encoding-pretty-print nil)) (json-encode graph-data)))
          (d3-script (org-graph--fetch-d3))
-         (html (org-graph--make-html-content)))
+         (html (org-graph--make-html-content))
+         (coding-system-for-write 'utf-8))
     
     (setq html (replace-regexp-in-string "REPLACE_D3_HERE" d3-script html t t))
     (setq html (replace-regexp-in-string "REPLACE_DATA_HERE" json-str html t t))
