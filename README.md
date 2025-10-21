@@ -23,4 +23,4 @@ Graph visualization for Org notes
 
 ## Generate a Graph
 
-```M-x org-graph-view```
+```M-x org-graph-open```
