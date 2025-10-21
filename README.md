@@ -1,4 +1,4 @@
-# org-graph
+# org-grapher
 Graph visualization for Org notes
 
 <img width="1826" height="897" alt="graph" src="https://github.com/user-attachments/assets/14613469-d0d8-4001-b67c-d8fd223395ee" />
@@ -15,12 +15,12 @@ Graph visualization for Org notes
 2. Add to your `init.el` or `config.el`:
 
    ```elisp
-   (load "~/path/to/org-graph.el")
+   (load "~/path/to/org-grapher.el")
 
 ## Set your org directory 
 
-```(setq org-graph-notes-directory "~/") ```
+```(setq org-grapher-notes-directory "~/") ```
 
 ## Generate a Graph
 
-```M-x org-graph-open```
+```M-x org-grapher-open```
