@@ -1,7 +1,7 @@
 # org-grapher
 Graph visualization for Org notes
 
-<img width="1826" height="897" alt="graph" src="https://github.com/user-attachments/assets/14613469-d0d8-4001-b67c-d8fd223395ee" />
+<img width="1840" height="893" alt="sc" src="https://github.com/user-attachments/assets/345db7c9-fb1f-4140-b184-53c9d0fc78cc" />
 
 - Interactive graph of .org notes.
 - Links automatically created from tags and org mode links.
