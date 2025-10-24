@@ -5,9 +5,10 @@ Graph visualization for Org notes
 
 - Interactive graph of .org notes.
 - Links automatically created from tags and org mode links.
-- Lightweight, minimal, and self-contained.
+- Lightweight, minimal, and self-contained. 
 - Clustering reflect the number of connections.
-- Works fully offline after initial setup.
+- Works fully offline after initial setup. (D3 cached after first use)
+- Works with single file workflows too. (The screenshot above generated from a single org file)
 
 ## Installation
 
