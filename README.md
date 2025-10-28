@@ -1,7 +1,8 @@
 # org-grapher
 Graph visualization for Org-mode
 
-<img width="1840" height="893" alt="sc" src="https://github.com/user-attachments/assets/345db7c9-fb1f-4140-b184-53c9d0fc78cc" />
+![12](https://github.com/user-attachments/assets/f9fdc1a5-5f92-468e-b068-950d01cb7d15)
+
 
 - Links automatically created from tags and org mode links.
 - Lightweight, minimal, and self-contained. 
