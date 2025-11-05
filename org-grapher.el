@@ -45,15 +45,7 @@
     "note" "#6a9589"
     "todo" "#c55d55"
     "meeting" "#928374")
-  "Plist of tag names to colors (muted gruvbox inspired).
-Customize by setting this variable before loading org-grapher:
-
-  (setq org-grapher--tag-colors
-    '(\"emacs\" \"#ff0000\"
-      \"work\" \"#00ff00\"
-      \"personal\" \"#0000ff\"))
-
-Tags not in this list will get auto-generated colors.")
+  "Plist of tag names to colors.")
 
 (defvar org-grapher--color-cache (make-hash-table :test 'equal)
   "Cache for generated tag colors.")
@@ -69,9 +61,21 @@ Tags not in this list will get auto-generated colors.")
         (puthash tag color org-grapher--color-cache)
         color)))
 
+(defun org-grapher--convert-file-links (content file-dir)
+  "Convert org file links in CONTENT to absolute file:/// URLs.
+FILE-DIR is the directory of the org file."
+  (with-temp-buffer
+    (insert content)
+    (goto-char (point-min))
+    (while (re-search-forward "\\[\\[file:\\([^]]+?\\)\\]\\(?:\\[\\([^]]*\\)\\]\\)?\\]" nil t)
+      (let* ((path (match-string 1))
+             (abs-path (expand-file-name path file-dir))
+             (file-url (concat "file:///" (replace-regexp-in-string "^/+" "" abs-path))))
+        (replace-match file-url t t)))
+    (buffer-string)))
+
 (defun org-grapher--parse-notes (&optional directory)
-  "Parse all Org notes and return nodes and links.
-If DIRECTORY is provided, use it instead of `org-grapher-notes-directory'."
+  "Parse all Org notes and return nodes and links."
   (let* ((target-dir (or directory org-grapher-notes-directory))
          (nodes '())
          (links '())
@@ -83,10 +87,10 @@ If DIRECTORY is provided, use it instead of `org-grapher-notes-directory'."
                     (directory-files-recursively target-dir "\\.org\\'")
                   (directory-files target-dir t "\\.org\\'"))))
     
-    ;; First: collect all headings
     (dolist (file files)
       (condition-case err
-          (let ((fname (file-name-nondirectory file)))
+          (let ((fname (file-name-nondirectory file))
+                (fdir (file-name-directory file)))
             (with-temp-buffer
               (insert-file-contents file)
               (delay-mode-hooks (org-mode))
@@ -105,7 +109,7 @@ If DIRECTORY is provided, use it instead of `org-grapher-notes-directory'."
                                         (forward-line 1)
                                         (point))
                                       end))
-                             (content (replace-regexp-in-string "\\[\\[\\(file:[^]]+\\)\\]\\(?:\\[[^]]*\\]\\)?\\]" "\\1" raw-content))
+                             (content (org-grapher--convert-file-links raw-content fdir))
                              (note-id (format "note%d" note-counter))
                              (note-key (concat heading "__" fname)))
                 
@@ -142,7 +146,6 @@ If DIRECTORY is provided, use it instead of `org-grapher-notes-directory'."
                                   links))))))))))
         (error (message "Error parsing %s: %s" file err))))
     
-    ;; Second: parse all links (headings and body)
     (dolist (file files)
       (let ((fname (file-name-nondirectory file)))
         (with-temp-buffer
@@ -158,7 +161,6 @@ If DIRECTORY is provided, use it instead of `org-grapher-notes-directory'."
                   (setq current-heading (replace-regexp-in-string "\\[\\[.*?\\]\\(?:\\[.*?\\]\\)?\\]" "" current-heading))
                   (setq current-note-id (gethash (concat current-heading "__" fname) note-ids))
                   
-                  ;; Parse links in the heading line itself
                   (when current-note-id
                     (with-temp-buffer
                       (insert full-heading)
@@ -176,7 +178,6 @@ If DIRECTORY is provided, use it instead of `org-grapher-notes-directory'."
                                        (cons 'target target-note-id))
                                   links))))))))
                
-               ;; Parse links in body
                (current-note-id
                 (let ((line-end (line-end-position)))
                   (while (re-search-forward "\\[\\[\\(?:file:\\([^]]+\\)::\\)?\\*?\\([^]]+?\\)\\]\\(?:\\[\\([^]]+\\)\\]\\)?\\]" line-end t)
@@ -299,7 +300,7 @@ If DIRECTORY is provided, use it instead of `org-grapher-notes-directory'."
    "  .on('mouseover', function(e, d) { d3.select(this).attr('stroke-width', 4); if (hideLabels) labels.filter(l => l === d).attr('opacity', 1).attr('font-weight', 'bold'); })\n"
    "  .on('mouseout', function(e, d) { d3.select(this).attr('stroke-width', 2); if (hideLabels) labels.filter(l => l === d).attr('opacity', 0).attr('font-weight', 'normal'); })\n"
    "  .on('click', (e,d) => {\n"
-   "    const content = (d.content || 'No content').replace(/file:\\/+([^\\s]+\\.(png|jpg|jpeg|gif|svg|webp))/gi, (m, p) => '<br><img src=\"file:///' + p.replace(/^\\/+/, '') + '\" style=\"max-width: 100%; height: auto; margin: 10px 0; border-radius: 4px;\"><br>');\n"
+   "    const content = (d.content || 'No content').replace(/file:\\/\\/\\/([^\\s]+\\.(png|jpg|jpeg|gif|svg|webp))/gi, (m, p) => '<br><img src=\"file:///' + p + '\" style=\"max-width: 100%; height: auto; margin: 10px 0; border-radius: 4px;\"><br>');\n"
    "    const el = document.getElementById('details');\n"
    "    el.innerHTML = '<h3>' + d.heading + '</h3><p>' + content + '</p>' + (d.file ? '<em>' + d.file + '</em>' : '');\n"
    "    if (darkMode) { el.querySelectorAll('h3').forEach(h => h.style.color = '#ebdbb2'); el.querySelectorAll('p').forEach(p => p.style.color = '#d5c4a1'); el.querySelectorAll('em').forEach(em => em.style.color = '#a89984'); }\n"
@@ -367,8 +368,7 @@ If DIRECTORY is provided, use it instead of `org-grapher-notes-directory'."
    "</script>\n</body>\n</html>\n"))
 
 (defun org-grapher--generate-html (&optional directory)
-  "Generate HTML file with graph.
-If DIRECTORY is provided, parse org files from that directory instead."
+  "Generate HTML file with graph."
   (let* ((graph-data (org-grapher--parse-notes directory))
          (json-str (let ((json-encoding-pretty-print nil)) (json-encode graph-data)))
          (d3-script (org-grapher--fetch-d3))
