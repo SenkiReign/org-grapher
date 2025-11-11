@@ -110,49 +110,40 @@ FILE-DIR is the directory of the org file."
                                         (point))
                                       end))
                              (content (org-grapher--convert-file-links raw-content fdir))
-                             ;; Check if heading has links in title or content
-                             (has-links (or (string-match-p "\\[\\[" raw-heading)
-                                          (string-match-p "\\[\\[" content)))
-                             ;; Only create node if it has tags, links, or is a top-level heading
-                             (should-create (or tags 
-                                              has-links
-                                              (= (org-element-property :level headline) 1))))
-                        
-                        (when should-create
-                          (let ((note-id (format "note%d" note-counter))
-                                (note-key (concat heading "__" fname)))
+                             (note-id (format "note%d" note-counter))
+                             (note-key (concat heading "__" fname)))
+                
+                        (push (list (cons 'id note-id)
+                                   (cons 'heading heading)
+                                   (cons 'content (string-trim content))
+                                   (cons 'file fname)
+                                   (cons 'type "note")
+                                   (cons 'color (if tags 
+                                                   (org-grapher--get-tag-color (car tags))
+                                                   "#1f77b4")))
+                              nodes)
+                
+                        (puthash note-key note-id note-ids)
+                        (puthash heading note-id note-ids)
+                        (setq note-counter (1+ note-counter))
+                
+                        (when tags
+                          (dolist (tag tags)
+                            (unless (gethash tag tag-ids)
+                              (let ((tag-id (format "tag%d" tag-counter)))
+                                (push (list (cons 'id tag-id)
+                                           (cons 'heading tag)
+                                           (cons 'content "")
+                                           (cons 'file "")
+                                           (cons 'type "keyword")
+                                           (cons 'color (org-grapher--get-tag-color tag)))
+                                      nodes)
+                                (puthash tag tag-id tag-ids)
+                                (setq tag-counter (1+ tag-counter))))
                     
-                            (push (list (cons 'id note-id)
-                                       (cons 'heading heading)
-                                       (cons 'content (string-trim content))
-                                       (cons 'file fname)
-                                       (cons 'type "note")
-                                       (cons 'color (if tags 
-                                                       (org-grapher--get-tag-color (car tags))
-                                                       "#1f77b4")))
-                                  nodes)
-                    
-                            (puthash note-key note-id note-ids)
-                            (puthash heading note-id note-ids)
-                            (setq note-counter (1+ note-counter))
-                    
-                            (when tags
-                              (dolist (tag tags)
-                                (unless (gethash tag tag-ids)
-                                  (let ((tag-id (format "tag%d" tag-counter)))
-                                    (push (list (cons 'id tag-id)
-                                               (cons 'heading tag)
-                                               (cons 'content "")
-                                               (cons 'file "")
-                                               (cons 'type "keyword")
-                                               (cons 'color (org-grapher--get-tag-color tag)))
-                                          nodes)
-                                    (puthash tag tag-id tag-ids)
-                                    (setq tag-counter (1+ tag-counter))))
-                        
-                                (push (list (cons 'source note-id)
-                                           (cons 'target (gethash tag tag-ids)))
-                                      links))))))))))))
+                            (push (list (cons 'source note-id)
+                                       (cons 'target (gethash tag tag-ids)))
+                                  links))))))))))
         (error (message "Error parsing %s: %s" file err))))
     
     (dolist (file files)
